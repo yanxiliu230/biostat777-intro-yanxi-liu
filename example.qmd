@@ -28,6 +28,8 @@ The intended audience for this example analysis is anyone who wants to get a tas
 
 Data dictionary: https://www.rdocumentation.org/packages/datasets/versions/3.6.2/topics/airquality
 
+## Exploratory Data Analysis
+
 Let's first play with the dataset and get a taste of how it looks like using `dyplr` package.
 
 To simplify the analysis, I will exclude the missing values.
