@@ -1,0 +1,29 @@
+project:
+  type: website
+  title: "hw1"
+  render:
+    - "*.qmd"
+    
+website: 
+  title: "Home Page"
+  description: "test test"
+  navbar:
+    right:
+      - text: "Home"
+        file: index.qmd
+      - text: "About"
+        file: about.qmd
+      - text: "Example Analysis"
+        file: example.qmd
+
+format:
+  html:
+    theme: simplex
+    toc: true
+    css: styles.css
+
+execute:
+  freeze: auto
+
+editor: visual
+

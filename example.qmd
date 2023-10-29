@@ -1,0 +1,136 @@
+---
+title: "Example analysis"
+format: html
+---
+
+# Background
+
+I will be doing a short data analysis on the built in air quality dataset in R. This dataset contains air quality measurements in New York between May and September in 1973. It contains 6 variables and 153 observations
+
+```{r}
+#| label: "setup"
+#| include: false
+library(dplyr)
+library(tidyverse)
+library(ggplot2)
+```
+
+```{r}
+#| echo: true
+data(airquality)
+dim(airquality)
+head(airquality, 3)
+```
+
+Our question is: does temperature affect the ozone level?
+
+The intended audience for this example analysis is anyone who wants to get a taste of the exploratory data analysis.
+
+Data dictionary: https://www.rdocumentation.org/packages/datasets/versions/3.6.2/topics/airquality
+
+Let's first play with the dataset and get a taste of how it looks like using `dyplr` package.
+
+To simplify the analysis, I will exclude the missing values.
+
+```{r}
+air <- airquality[rowSums(is.na(airquality)) == 0,]
+```
+
+After removing the missing values, we have 111 observations and 6 variables
+
+```{r}
+dim(air)
+```
+
+```{r}
+air %>% summarise(mean_ozone = mean(Ozone),
+                  median_ozone = median(Ozone),
+                  sd_ozone = sd(Ozone),
+                  max_ozone = max(Ozone),
+                  min_ozone = min(Ozone))
+```
+
+Our ozone level is a very skewed dataset. Let's take a look at the histogram
+
+```{r}
+ggplot(air, aes(x=Ozone)) + geom_histogram() + 
+  ggtitle("Histogram of Ozone Level") + 
+  geom_vline(aes(xintercept=mean(Ozone)),
+            color="blue", linetype="dashed", size=1) + 
+  geom_vline(aes(xintercept=median(Ozone)),
+            color="red", linetype="dashed", size=1)
+  
+```
+
+The blue dashed line is the mean while the red dashed line is the median of ozone level. Our dataset is very skewed.
+
+Mean ozone from May to September is 42, median at 31, maximum at 168, and minimum at 1
+
+```{r}
+air  %>%
+  select(Ozone, Month, Day)%>% 
+  slice_max(Ozone, n = 3)
+```
+
+The highest Ozone occurs in August and July.
+
+```{r}
+air  %>%
+  select(Ozone, Month, Day)%>% 
+  slice_min(Ozone, n = 3)
+```
+
+The lowest Ozone level occurs in May
+
+```{r}
+air %>% filter(Ozone > 100)
+```
+
+There are 7 days with Ozone level higher than 100, 6 out of 7 occurs in July and August with temperature over 80 degrees.
+
+It looks like time in the year might affect Ozone level. So let's check it out.
+
+```{r}
+air %>% 
+  group_by(Month) %>%
+  summarise(mean_ozone = mean(Ozone),
+            mean_temp = mean(Temp),
+            sd_temp = sd(Temp),
+            median_temp = median(Temp),
+            max_temp = max(Temp),
+            min_temp = min(Temp),
+            count = n()) %>%
+  arrange(desc(mean_temp))
+```
+
+July has the highest mean, median, and standard deviation of temperature, but August is only a little bit behind in mean tempature. August has slightly higher mean Ozone level compared to July. May has the lowest mean Ozone and mean temperature
+
+::: callout-tip
+In scatterplots, flexibly play with color, dot size, dot shapes to add more information to the plots
+:::
+
+```{r}
+ggplot(air, aes(x=Temp, y=Ozone)) + 
+  geom_point(aes(col=Month)) + ggtitle("Ozone level against temperature")
+```
+
+```{r}
+ggplot(air, aes(x=Solar.R, y=Ozone)) + 
+  geom_point(aes(col=Month)) + ggtitle("Ozone level against solar radiation")
+```
+
+```{r}
+ggplot(air, aes(x=Wind, y=Ozone)) + 
+  geom_point(aes(col=Month))  + ggtitle("Ozone level against average wind speed")
+```
+
+```{r}
+#| label: fig-ozone-days
+#| fig-cap: "We plot ozone levels across days separated by months. There is no strong relationship between the ozone levels and the specific days in the month."
+ggplot(air, aes(x=Day, y=Ozone)) + 
+  geom_point()  + facet_grid(cols = vars(Month))  + ggtitle("Ozone level across days")
+```
+
+::: callout-note
+We have used `select`, `slice_max`, `group_by`, `summarize`, `filter`, `arrange` in the `dplyr` package
+:::

@@ -1,0 +1,6 @@
+---
+title: "About"
+format: html
+---
+
+I graduated from University of California, Los Angeles with a Bachelor of Science degree in Applied Mathematics.
