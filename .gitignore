@@ -3,4 +3,5 @@
 _site
 hw1.Rproj
 .quarto
+.Rhistory
 /.quarto/

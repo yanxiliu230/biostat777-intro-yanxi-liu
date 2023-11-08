@@ -1,11 +1,12 @@
 ---
 title: "Example analysis"
 format: html
+bibliography: references.bib
 ---
 
 # Background
 
-I will be doing a short data analysis on the built in air quality dataset in R. This dataset contains air quality measurements in New York between May and September in 1973. It contains 6 variables and 153 observations
+I will be doing a short data analysis on the built in air quality dataset in R.
 
 ```{r}
 #| label: "setup"
@@ -22,20 +23,41 @@ dim(airquality)
 head(airquality, 3)
 ```
 
+## Question
+
 Our question is: does temperature affect the ozone level?
+
+## Target Audience
 
 The intended audience for this example analysis is anyone who wants to get a taste of the exploratory data analysis.
 
-Data dictionary: https://www.rdocumentation.org/packages/datasets/versions/3.6.2/topics/airquality
+## Data Description
 
-## Exploratory Data Analysis
+This dataset we are using contains air quality measurements in New York between May and September in 1973. It contains 6 variables and 153 observations. This is a dataset in R that we have easy access to if anyone also wants to play with it.
 
-Let's first play with the dataset and get a taste of how it looks like using `dyplr` package.
+### Data Dictionary
+
+| Option    | Description |
+|------|----------|
+| `Ozone`    | Mean ozone in parts per billion from 1300 to 1500 hours at Roosevelt Island|
+| `Solar.R`    | Solar radiation in Langleys in the frequency band 4000--7700 Angstroms from 0800 to 1200 hours at Central Park |
+| `Wind` | Average wind speed in miles per hour at 0700 and 1000 hours at LaGuardia Airport |
+| `Temp` | Maximum daily temperature in degrees Fahrenheit at La Guardia Airport. |
+| `Month` | The Month the data is collected
+| `Day` | The Day the data is collected|
+
+### Link to data and data dictionary
+
+The link to data and data dictionary [@datasource]: <https://www.rdocumentation.org/packages/datasets/versions/3.6.2/topics/airquality>
+
+# Exploratory Data Analysis
+
+Let's first play with the dataset and get a taste of how it looks like using `dyplr` and `ggplot2` package.
 
 To simplify the analysis, I will exclude the missing values.
 
 ```{r}
-air <- airquality[rowSums(is.na(airquality)) == 0,]
+air <- drop_na(airquality)
 ```
 
 After removing the missing values, we have 111 observations and 6 variables
@@ -55,6 +77,8 @@ air %>% summarise(mean_ozone = mean(Ozone),
 Our ozone level is a very skewed dataset. Let's take a look at the histogram
 
 ```{r}
+#| label: fig-ozone-histogram
+#| fig-cap: "We plot ozone levels in histogram form to get a better sense of the distribution"
 ggplot(air, aes(x=Ozone)) + geom_histogram() + 
   ggtitle("Histogram of Ozone Level") + 
   geom_vline(aes(xintercept=mean(Ozone)),
@@ -107,21 +131,42 @@ air %>%
 
 July has the highest mean, median, and standard deviation of temperature, but August is only a little bit behind in mean tempature. August has slightly higher mean Ozone level compared to July. May has the lowest mean Ozone and mean temperature
 
+Below is a photo of ozone level over the years. Based on this, we suspect that the ozone level is related to time and temperature. Let's do more analysis
+
+![](images/ozone-temp.png)
+
+[[Source | Air Pollution in NYC: Causes, Effects, and Solutions] [@imagesource](https://earth.org/air-pollution-in-nyc/)]
+
 ::: callout-tip
 In scatterplots, flexibly play with color, dot size, dot shapes to add more information to the plots
 :::
 
 ```{r}
+#| label: fig-ozone-temp
+#| fig-cap: "Plot of Ozone against temperature shows that there is some relationship between Ozone level and temprature. The colors correspond to month; we can see more black dots in the lower temperature and lower ozone level range, and shallower dots in the higher temperature and higher ozone level range. The blue line represents the rrend line, which is roughly linear. the gray area is 95% confidence interval"
 ggplot(air, aes(x=Temp, y=Ozone)) + 
-  geom_point(aes(col=Month)) + ggtitle("Ozone level against temperature")
+  geom_point(aes(col=Month)) + geom_smooth()+ ggtitle("Ozone level against temperature")
 ```
 
+::: {.column-margin}
+
+
+There are some dots that look like outlier or influential points that may have a major effect on fit of linear model. Right now, we might think that a second degree polynomial is a better fit because the trend line curvea bit. But without the influential points, a linear model might be an easier and better choice.
+
+The book Linear Models in Statistics [@model] is a good reference if we want to proceed with fitting a model for this dataset
+:::
+
+
 ```{r}
+#| label: fig-ozone-solar
+#| fig-cap: "There is no clear relationship between Ozone and solar radiation"
 ggplot(air, aes(x=Solar.R, y=Ozone)) + 
-  geom_point(aes(col=Month)) + ggtitle("Ozone level against solar radiation")
+  geom_point(aes(col=Month)) + ggtitle("Ozone level against solar radiation") + xlab("Solar Radiation")
 ```
 
 ```{r}
+#| label: fig-ozone-wind
+#| fig-cap: "Ozone level and wind speed has a negative relationship. The higher the wind speed, the lower the ozone level"
 ggplot(air, aes(x=Wind, y=Ozone)) + 
   geom_point(aes(col=Month))  + ggtitle("Ozone level against average wind speed")
 ```
@@ -133,6 +178,48 @@ ggplot(air, aes(x=Day, y=Ozone)) +
   geom_point()  + facet_grid(cols = vars(Month))  + ggtitle("Ozone level across days")
 ```
 
+
 ::: callout-note
 We have used `select`, `slice_max`, `group_by`, `summarize`, `filter`, `arrange` in the `dplyr` package
 :::
+
+::: callout-note
+We have used `geom_point`, `geom_vline`, `geom_histogram`, `geom_smooth()` in the `ggplot2` package, and `facet_grid()`
+:::
+
+## Modelling
+
+Based on the scatter plots, we think that there might be a linear relationship between ozone level and temperature. The simple linear regression confirms our thoughts. Temp is statistically significant with a p value < 2e-16
+
+```{r}
+lm.out <- lm(Ozone ~ Temp, data = air)
+summary(lm.out)
+```
+
+But we also see that the temperature is related to month. When we adjusts for month, the temperature is still signicant, although the covariate month is not. The relationship between ozone level and month is through temperature.
+
+```{r}
+lm.out.2 <- lm(Ozone ~ Temp + Month, data = air)
+summary(lm.out.2)
+```
+In our full model, temperature and wind are the two most statistically significant predictors, which coincides with our exploratory data analysis in the previous section
+
+```{r}
+lm.out.3 <- lm(Ozone ~ Temp + Month + Wind + Solar.R, data = air)
+summary(lm.out.3)
+```
+
+
+# Summary
+
+In conclusion, temperature does affect ozone level significantly. The scatter plot of ozone level against temperature shows a rough linear relationship, while the linear model confirms that this predictor is a statistically significant. We at first suspected that month relates to ozone level, but adjusting for temperature makes month not significant predictor for ozone level. Days in the month and solar radiation do not show significant linear relationship with Ozone level.
+
+# Functions used
+
+| Package    | Functions |
+| -- | ----- |
+| `dplyr` | `select()`, `slice_max()`, `group_by()`, `summarize()`, `filter()`, `arrange()`|
+| `tidyr` | `drop_na()` |
+| `ggplot2` | `geom_point()`, `geom_vline()`, `geom_histogram()`, `geom_smooth()` |
+| | `facet_grid()` |
+
