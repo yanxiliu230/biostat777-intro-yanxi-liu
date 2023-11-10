@@ -1,8 +1,6 @@
 ---
-title: "Project 1"
+title: "Yanxi(Nora) Liu"
 format: html
-author: 
-  - name: Yanxi(Nora) Liu
 ---
 
 Hi this is Nora. Welcome to my homepage. I am a first year Biostatistics PhD student at Johns Hopkins University. Outside academics, I love watching musicals; Come From Away is my favorite.
